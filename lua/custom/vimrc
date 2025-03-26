@@ -1,0 +1,307 @@
+" Guide
+	" map expands RHS
+	" noremap uses original
+	" map = n+v+s+o
+	" map! = i+c
+	" to change operatorending mode,
+	" onoremap <expr> O v:operator == 'd' ? ':.diffget<cr>' : '<
+	" :lmap applies to insert, command line etc
+
+" Packages + plugins
+	packadd! gruvbox-material
+
+" Options
+	set relativenumber number
+	set nocompatible
+	set equalalways
+	set mouse=a
+	set nowrap
+	set tabstop=4
+	set shiftwidth=4
+	set autoindent
+	set ic
+	set selection=exclusive	
+	" do not store vimrc values from the prev session
+		set sessionoptions-=options 
+	" Don't make Esc mapping interfere with keycodes
+		set timeout timeoutlen=800 ttimeoutlen=100
+		set updatetime=500
+	" highlighting
+		" NOTE: autocmd Colorscheme * before any highlights
+		" colorscheme
+			colorscheme gruvbox-material
+		" ShowColors function
+			function! ShowColors()
+				for i in range(0, 15)
+					" Highlight each number using its own color slot
+						exec 'hi Color' . i . ' ctermbg=' . i . ' ctermfg=NONE'
+					" Print the number with its color
+						exec 'echon "' . i . ' " | echohl Color' . i . ' | echon "Color\n" | echohl NONE' 
+				endfor
+			endfunction
+			" call ShowColors()
+		" diff highlight easier to read
+			autocmd Colorscheme * highlight DiffChanged ctermfg=black
+		" search results 
+			set incsearch
+			set hlsearch
+		" cursor/currline using 16-colour format
+			" 0 = black
+			" 3 = brown/yellow
+			" 5 = orange (or pink)
+			" 15 = white
+			set cursorline
+			"" highlight CursorLine gui=bold cterm=italic ctermfg=0 ctermbg=3
+			autocmd Colorscheme * highlight CursorLine gui=bold ctermfg=0 ctermbg=3
+			" Insert mode: I-beam cursor	
+				let &t_SI = "\e[6 q" 
+			" Normal mode
+				" Block cursor	
+					let &t_EI = "\e[2 q"
+				" I-beam cursor
+					" let &t_EI = "\e[6 q" 
+		" folded lines
+			autocmd Colorscheme * highlight Folded ctermfg=5 ctermbg=11
+	" fold under bash comments
+		set foldignore=
+		set foldminlines=0
+
+" Editing 
+	" meta
+		" vimscript comment
+		nnoremap " mqI"<Space><Esc>`q<Right><Right>
+
+	" Mode switching
+		" to command
+			"nnoremap : ;
+			nmap ; :
+			vnoremap ; : 
+			onoremap ; :
+			" command mode self-reference
+				cnoremap ; :
+				" still allow typing ;
+					cnoremap \; ;	
+	
+		" to insert
+			" before/after cursor block
+				nnoremap aa a
+				nnoremap al a
+				nnoremap aj i
+			" in newline above/below
+				nnoremap ai O
+				nnoremap ak o
+
+		" to normal 
+			inoremap ;; <Esc>
+			inoremap aa <Esc>
+			cnoremap ;; <C-c> 
+			
+	" Navigation directions
+		" normal + visual + operator
+			noremap j b
+			noremap k j
+			noremap i k
+			noremap l w
+
+			" characterwise, start/end of line
+				noremap L l
+				" originally Join lines, i don't need this
+				noremap J h
+				" originally insert before first non-blank column in line
+				" this will be remapped below 
+				noremap I ^
+				" originally Look up Keyword, I don't need this
+				noremap K $
+				noremap II gg
+				noremap Ii gg
+				noremap KK G$
+				noremap Kk G$
+
+		" operator + visual
+			" remap inner and outer text objects      
+				onoremap , i
+				onoremap . a
+				onoremap w iw
+				onoremap # i"
+				onoremap { i{
+
+				vnoremap , i
+				vnoremap . a
+				vnoremap w iw
+				vnoremap " i"
+				vnoremap { i{
+			
+		" Visual
+			vnoremap l e
+			" to visual line
+				vnoremap k <C-v>Vj
+				vnoremap i <C-v>Vk
+				vnoremap j <C-v>vh
+				vnoremap l <C-v>vl
+
+		" insert
+			inoremap ;j <Left>
+			inoremap ;k <Down>
+			inoremap ;i <Up>
+			inoremap ;l <Right>
+				
+	" new line but stay in normal
+		" quite hacky but it inserts a '.' and then erases it to preserve indent
+		nnoremap <CR> o.<Esc>"_x
+		nnoremap <Backspace> i<Backspace><Esc> 
+		vnoremap <Backspace> i<Backspace><Esc> 
+
+	" Paste
+		" swap pastes
+			nnoremap p P
+			nnoremap P p
+		" paste directly into word
+			nnoremap C vp
+
+	" undo and redo consolidate to U key
+		nnoremap U <C-r> 
+
+	" Search
+		" s: search pcre-like
+			nnoremap / /\v
+			nnoremap s /\v
+		" S: substitute globally
+			nnoremap S :%s///g<Left><Left>
+		" Enter to go to next result, Esc to quit
+			function! TmSearchNext()
+			  if getcmdtype() ==# '/' || getcmdtype() ==# '?'
+				" if search, go to next one and expand fold
+					return "\<C-g>\<Cmd>normal! zx\<CR>"
+			  else
+				  return "\<CR>"
+			  endif
+			endfunction
+
+			function! TmSearchEsc()
+			  if (getcmdtype() ==# '/' || getcmdtype() ==# '?') && getcmdline() != '\v'
+					return "\<CR>"
+			  else
+				return "\<C-C>"
+			  endif
+			endfunction
+			
+			cnoremap <expr> <CR> TmSearchNext()
+			cnoremap £ <CR>
+			cnoremap <expr> <Esc> TmSearchEsc()
+			cnoremap <Esc>[ <Esc>[
+			
+			" Automatically open folds when jumping to a search result
+			" originallwas zxzz to center cursor
+            autocmd CursorHold * if mode() != 'i' | execute 'normal! zx' | endif
+
+	" Indentation
+		nnoremap <Tab> >>
+		vnoremap <Tab> >
+		onoremap <Tab> >
+
+	" Folding
+		" fold all, unfold current line
+			nnoremap <Space><Space> zx
+			nnoremap <Space>k jzx
+		" fold all
+			nnoremap <Space>a zM
+		" Move between fold sections
+			" go to next/previous fold (closest one of start/end)
+				nnoremap <Space>i zk
+				nnoremap <Space>k zj
+			" go to start/end of current fold scope, or otherwise to containing scope
+				nnoremap <Space>j [z
+				nnoremap <Space>l ]z
+		set foldmethod=indent
+		set foldtext=MyFoldText()
+		set fcs=fold:\ ,vert:\|
+		function! MyFoldText()
+			let line = getline(v:foldstart)
+			let subSimple = substitute(line, '/\*\|\*/\|{{{\d\=|-', '', 'g')
+			let subTabs = substitute(subSimple, '\t', '    ', 'g')
+			" return v:folddashes . sub
+			return subTabs . '     .      .     .    .   .   .  .  . . ............................'
+		endfunction
+		nnoremap <LeftMouse> <LeftMouse>zx
+	
+	" Recording
+		noremap ,, q
+		noremap ,. @
+		noremap ,.. @@
+		
+
+" Workspace 
+	" switch windows
+		nnoremap tk <C-w>w
+		nnoremap ti <C-w>W
+		nnoremap tj :execute "tabN" <CR>
+		nnoremap tl :execute "tabn" <CR>
+		nnoremap tm <C-w>T
+		nnoremap ta :execute "tab sball" <CR>
+
+	" exit vim
+		" <CR> is used for Enter
+		nnoremap qq :execute "x" <CR>
+		nnoremap qa :execute "confirm qa" <CR>
+		nnoremap q :execute "confirm quit" <CR>
+
+	" save
+		nnoremap w :execute "w" <CR>
+		nnoremap :w :w 
+
+" Sessions
+    function! SessionWrite(sessname)
+        exe "mks! ~/.vim/sessions/" . a:sessname
+    endfunction
+    "" :command! -nargs=? -complete=file SessWrite mks! ~/.vim/sessions/<args>
+     :command! -nargs=1 -complete=file Sw call SessionWrite('<args>')
+    
+" Command abbreviations
+    cab e tabf
+    cab t tabf
+    cab v vs
+	"" cab sw mks! ~/.vim/sessions
+    cab sw Sw
+    cab se source ~/.vim/sessions
+    cab vedt tabf ~/.vim/vimrc
+    cab tedt tabf ~/.termux/termux.properties
+    cab bedt tabf ~/.bashrc
+    cab vrc ~/.vim/vimrc
+    cab trc ~/.termux/termux-properties
+    cab brc ~/.bashrc
+    cab vsrc source ~/.vim/vimrc
+
+" Autocommands
+	" create dir if it doesnt exist when editing new file
+		augroup Mkdir  
+		  autocmd!  
+		  autocmd BufWritePre * call mkdir(expand("<afile>:p:h"), "p")  
+		augroup END
+		
+		augroup Vsrc 
+		  autocmd!  
+		  autocmd BufWritePost vimrc execute "source " . expand("<afile>:p")
+		augroup END
+	
+		function! TmSearchUnfold()
+			" execute "<C-C>"
+			" if getcmdtype() !=# '/' && getcmdtype() !=# '?'
+				" return
+			" endif		
+			normal! zx
+			" let cmdName = '^MyFancySearch\s'
+			" let cmdLine=getcmdline()
+			" if cmdLine !~# cmdName
+				" return
+			" endif
+			" let pattern = substitute(cmdLine, cmdName, '', '')
+			" let @/="tm"
+			" set hlsearch
+			" redraw
+		endfunction
+		
+		augroup TmSearchUnfold
+		  autocmd!
+		  autocmd CmdlineChanged / call TmSearchUnfold()
+		augroup END
+
